@@ -1,0 +1,11 @@
+# Build
+build*/
+build_*/
+
+# Executable
+task_1
+
+# IDE
+.idea/
+.vscode/
+
