@@ -216,7 +216,7 @@ CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //use float instead of double
-USE_FLOAT:BOOL=OFF
+USE_FLOAT:BOOL=ON
 
 //Value Computed by CMake
 task_1_BINARY_DIR:STATIC=/home/bogdan-chernousov/Documents/Parallel/1_task/build
