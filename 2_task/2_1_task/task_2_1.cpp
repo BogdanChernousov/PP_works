@@ -100,4 +100,7 @@ int main(){
     return 0;
 }
 
+
+
+
 // g++ -fopenmp task_2_1.cpp -o task_2_1 && ./task_2_1
