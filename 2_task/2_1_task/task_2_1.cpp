@@ -101,6 +101,10 @@ int main(){
 }
 
 
-
-
-// g++ -fopenmp task_2_1.cpp -o task_2_1 && ./task_2_1
+// Характеристики вычислительного узла
+// - **CPU:** Intel(R) Xeon(R) Gold 6248 CPU @ 2.50GHz  
+// - **Сервер:** ProLiant XL270d Gen10  
+// - **NUMA nodes:** 2  
+//   - node 0: 385636 MB (~377 GB)  
+//   - node 1: 387008 MB (~378 GB)  
+// - **ОС:** Ubuntu 22.04.5 LTS (Jammy Jellyfish)

@@ -79,3 +79,13 @@ int main(int argc, char **argv)
     printf("Speedup: %.2f\n", tserial / tparallel);
     return 0;
 }
+
+
+
+// Характеристики вычислительного узла
+// - **CPU:** Intel(R) Xeon(R) Gold 6248 CPU @ 2.50GHz  
+// - **Сервер:** ProLiant XL270d Gen10  
+// - **NUMA nodes:** 2  
+//   - node 0: 385636 MB (~377 GB)  
+//   - node 1: 387008 MB (~378 GB)  
+// - **ОС:** Ubuntu 22.04.5 LTS (Jammy Jellyfish)
