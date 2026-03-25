@@ -118,15 +118,15 @@ double pow_func(double x, double y)
     return std::pow(x, y);
 }
 
-// Клиент 1: синус
+// Клиент 1: синус 
 void client_sin(Server<double>& server, int N)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 2 * M_PI);
     
-    std::ofstream file("sin_results.txt");
-    file << "ID\tArgument\tResult\n";
+    std::ofstream file("../sin_results.csv");
+    file << "id,argument,result\n";
     
     std::vector<std::pair<size_t, std::future<double>>> futures;
     std::vector<double> args;
@@ -148,8 +148,10 @@ void client_sin(Server<double>& server, int N)
         auto& [id, future] = futures[i];
         double res = future.get();
         server.save_result(id, res);
-        file << id << "\t" << args[i] << "\t" << res << "\n";
+        file << id << "," << args[i] << "," << res << "\n";
     }
+    
+    std::cout << "sin client finished, " << N << " tasks\n";
 }
 
 // Клиент 2: корень
@@ -159,8 +161,8 @@ void client_sqrt(Server<double>& server, int N)
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 100);
     
-    std::ofstream file("sqrt_results.txt");
-    file << "ID\tArgument\tResult\n";
+    std::ofstream file("../sqrt_results.csv");
+    file << "id,argument,result\n";
     
     std::vector<std::tuple<size_t, std::future<double>, double>> futures;
     
@@ -179,8 +181,10 @@ void client_sqrt(Server<double>& server, int N)
     {
         double res = future.get();
         server.save_result(id, res);
-        file << id << "\t" << arg << "\t" << res << "\n";
+        file << id << "," << arg << "," << res << "\n";
     }
+    
+    std::cout << "sqrt client finished, " << N << " tasks\n";
 }
 
 // Клиент 3: степень
@@ -191,8 +195,9 @@ void client_pow(Server<double>& server, int N)
     std::uniform_real_distribution<> dis1(1, 10);
     std::uniform_real_distribution<> dis2(0, 5);
     
-    std::ofstream file("pow_results.txt");
-    file << "ID\tBase\tExponent\tResult\n";
+    std::ofstream file("../pow_results.csv");
+    file << std::fixed << std::setprecision(15);
+    file << "id,base,exponent,result\n";
     
     std::vector<std::tuple<size_t, std::future<double>, double, double>> futures;
     
@@ -212,35 +217,12 @@ void client_pow(Server<double>& server, int N)
     {
         double res = future.get();
         server.save_result(id, res);
-        file << id << "\t" << base << "\t" << exp << "\t" << res << "\n";
+        file << id << "," << base << "," << exp << "," << res << "\n";
     }
+    
+    std::cout << "pow client finished, " << N << " tasks\n";
 }
 
-// Тест
-void test() {
-    std::cout << "\n=== TEST ===\n";
-    
-    auto check_file = [](const std::string& name)
-    {
-        std::ifstream f(name);
-        if (f.is_open())
-        {
-            int lines = 0;
-            std::string line;
-            while (std::getline(f, line)) lines++;
-            std::cout << name << ": " << lines-1 << " записей\n";
-            f.close();
-        }
-        else
-        {
-            std::cout << name << ": не найден\n";
-        }
-    };
-    
-    check_file("sin_results.txt");
-    check_file("sqrt_results.txt");
-    check_file("pow_results.txt");
-}
 
 int main(){
     std::cout << "Start\n";
@@ -248,7 +230,7 @@ int main(){
     Server<double> server;
     server.start();
     
-    int N = 10; // (5 < N < 10000)
+    int N = 1000; // (5 < N < 10000)
 
     std::thread t1(client_sin, std::ref(server), N);
     std::thread t2(client_sqrt, std::ref(server), N);
@@ -259,8 +241,6 @@ int main(){
     t3.join();
     
     server.stop();
-    
-    test();
     
     std::cout << "End\n";
     return 0;
