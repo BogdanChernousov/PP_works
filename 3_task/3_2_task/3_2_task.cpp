@@ -27,19 +27,21 @@ private:
     std::atomic<size_t> task_id_counter{0};
     
 public:
-    void start() {
-        server_thread = std::jthread([this](std::stop_token stoken) {
-            while (!stoken.stop_requested()) {
+    void start()
+    {
+        server_thread = std::jthread([this](std::stop_token stoken)
+        {
+            while (!stoken.stop_requested())
+            {
                 std::unique_lock<std::mutex> lock(mut);
                 
                 // Ждем задачи
-                cond_var.wait(lock, [this, &stoken] { 
-                    return !tasks.empty() || stoken.stop_requested(); 
-                });
+                cond_var.wait(lock, [this, &stoken]{ return !tasks.empty() || stoken.stop_requested(); });
                 
                 if (stoken.stop_requested()) break;
                 
-                if (!tasks.empty()) {
+                if (!tasks.empty())
+                {
                     auto task = std::move(tasks.front());
                     tasks.pop();
                     lock.unlock();
@@ -51,65 +53,74 @@ public:
         });
     }
     
-    void stop() {
-        if (server_thread.joinable()) {
+    void stop()
+    {
+        if (server_thread.joinable())
+        {
             server_thread.request_stop();
             cond_var.notify_all();
             server_thread.join();
         }
     }
     
-    size_t add_task(std::packaged_task<T()>&& task) {
+    size_t add_task(std::packaged_task<T()>&& task)
+    {
         size_t id = ++task_id_counter;
         
         {
             std::lock_guard<std::mutex> lock(mut);
             tasks.push(std::move(task));
         }
+
         cond_var.notify_one();
         
         return id;
     }
     
-    T request_result(size_t id) {
+    T request_result(size_t id)
+    {
         std::unique_lock<std::mutex> lock(mut);
         
         // Ждем результат
-        cond_var.wait(lock, [this, id] { 
-            return results.find(id) != results.end(); 
-        });
+        cond_var.wait(lock, [this, id]{ return results.find(id) != results.end(); });
         
         T res = results[id];
         results.erase(id);
         return res;
     }
     
-    void save_result(size_t id, T value) {
+    void save_result(size_t id, T value)
+    {
         std::lock_guard<std::mutex> lock(mut);
         results[id] = value;
         cond_var.notify_all();
     }
     
-    ~Server() {
+    ~Server()
+    {
         stop();
     }
 };
 
 // Функции задач
-double sin_func(double x) {
+double sin_func(double x)
+{
     return std::sin(x);
 }
 
-double sqrt_func(double x) {
+double sqrt_func(double x)
+{
     return std::sqrt(x);
 }
 
-double pow_func(double x, double y) {
+double pow_func(double x, double y)
+{
     return std::pow(x, y);
 }
 
 // Клиент 1: синус
-void client_sin(Server<double>& server, int N) {
+void client_sin(Server<double>& server, int N)
+{
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 2 * M_PI);
@@ -120,7 +131,8 @@ void client_sin(Server<double>& server, int N) {
     std::vector<std::pair<size_t, std::future<double>>> futures;
     std::vector<double> args;
     
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         double arg = dis(gen);
         args.push_back(arg);
         
@@ -131,7 +143,8 @@ void client_sin(Server<double>& server, int N) {
         futures.emplace_back(id, std::move(future));
     }
     
-    for (size_t i = 0; i < futures.size(); i++) {
+    for (size_t i = 0; i < futures.size(); i++)
+    {
         auto& [id, future] = futures[i];
         double res = future.get();
         server.save_result(id, res);
@@ -140,7 +153,8 @@ void client_sin(Server<double>& server, int N) {
 }
 
 // Клиент 2: корень
-void client_sqrt(Server<double>& server, int N) {
+void client_sqrt(Server<double>& server, int N)
+{
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 100);
@@ -150,7 +164,8 @@ void client_sqrt(Server<double>& server, int N) {
     
     std::vector<std::tuple<size_t, std::future<double>, double>> futures;
     
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         double arg = dis(gen);
         
         std::packaged_task<double()> task(std::bind(sqrt_func, arg));
@@ -160,7 +175,8 @@ void client_sqrt(Server<double>& server, int N) {
         futures.emplace_back(id, std::move(future), arg);
     }
     
-    for (auto& [id, future, arg] : futures) {
+    for (auto& [id, future, arg] : futures)
+    {
         double res = future.get();
         server.save_result(id, res);
         file << id << "\t" << arg << "\t" << res << "\n";
@@ -168,7 +184,8 @@ void client_sqrt(Server<double>& server, int N) {
 }
 
 // Клиент 3: степень
-void client_pow(Server<double>& server, int N) {
+void client_pow(Server<double>& server, int N)
+{
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis1(1, 10);
@@ -179,7 +196,8 @@ void client_pow(Server<double>& server, int N) {
     
     std::vector<std::tuple<size_t, std::future<double>, double, double>> futures;
     
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         double base = dis1(gen);
         double exp = dis2(gen);
         
@@ -190,7 +208,8 @@ void client_pow(Server<double>& server, int N) {
         futures.emplace_back(id, std::move(future), base, exp);
     }
     
-    for (auto& [id, future, base, exp] : futures) {
+    for (auto& [id, future, base, exp] : futures)
+    {
         double res = future.get();
         server.save_result(id, res);
         file << id << "\t" << base << "\t" << exp << "\t" << res << "\n";
@@ -201,15 +220,19 @@ void client_pow(Server<double>& server, int N) {
 void test() {
     std::cout << "\n=== TEST ===\n";
     
-    auto check_file = [](const std::string& name) {
+    auto check_file = [](const std::string& name)
+    {
         std::ifstream f(name);
-        if (f.is_open()) {
+        if (f.is_open())
+        {
             int lines = 0;
             std::string line;
             while (std::getline(f, line)) lines++;
             std::cout << name << ": " << lines-1 << " записей\n";
             f.close();
-        } else {
+        }
+        else
+        {
             std::cout << name << ": не найден\n";
         }
     };
@@ -219,18 +242,18 @@ void test() {
     check_file("pow_results.txt");
 }
 
-int main() {
+int main(){
     std::cout << "Start\n";
     
     Server<double> server;
     server.start();
     
-    int N = 10; // Можно изменить (5 < N < 10000)
-    
+    int N = 10; // (5 < N < 10000)
+
     std::thread t1(client_sin, std::ref(server), N);
     std::thread t2(client_sqrt, std::ref(server), N);
     std::thread t3(client_pow, std::ref(server), N);
-    
+
     t1.join();
     t2.join();
     t3.join();
