@@ -11,6 +11,7 @@
 #include <random>
 #include <fstream>
 #include <vector>
+#include <iomanip>
 
 // Шаблон класса сервера
 template<typename T>
@@ -25,7 +26,7 @@ private:
     std::condition_variable cond_var;
     std::jthread server_thread;
     std::atomic<size_t> task_id_counter{0};
-    
+
 public:
     void start()
     {
@@ -37,9 +38,9 @@ public:
                 
                 // Ждем задачи
                 cond_var.wait(lock, [this, &stoken]{ return !tasks.empty() || stoken.stop_requested(); });
-                
+
                 if (stoken.stop_requested()) break;
-                
+
                 if (!tasks.empty())
                 {
                     auto task = std::move(tasks.front());
@@ -52,7 +53,7 @@ public:
             std::cout << "Server stopped\n";
         });
     }
-    
+
     void stop()
     {
         if (server_thread.joinable())
@@ -62,7 +63,7 @@ public:
             server_thread.join();
         }
     }
-    
+
     size_t add_task(std::packaged_task<T()>&& task)
     {
         size_t id = ++task_id_counter;
@@ -76,7 +77,7 @@ public:
         
         return id;
     }
-    
+
     T request_result(size_t id)
     {
         std::unique_lock<std::mutex> lock(mut);
@@ -88,14 +89,14 @@ public:
         results.erase(id);
         return res;
     }
-    
+
     void save_result(size_t id, T value)
     {
         std::lock_guard<std::mutex> lock(mut);
         results[id] = value;
         cond_var.notify_all();
     }
-    
+
     ~Server()
     {
         stop();
@@ -124,13 +125,13 @@ void client_sin(Server<double>& server, int N)
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 2 * M_PI);
-    
+
     std::ofstream file("../sin_results.csv");
     file << "id,argument,result\n";
-    
+
     std::vector<std::pair<size_t, std::future<double>>> futures;
     std::vector<double> args;
-    
+
     for (int i = 0; i < N; i++)
     {
         double arg = dis(gen);
@@ -142,7 +143,7 @@ void client_sin(Server<double>& server, int N)
         
         futures.emplace_back(id, std::move(future));
     }
-    
+
     for (size_t i = 0; i < futures.size(); i++)
     {
         auto& [id, future] = futures[i];
@@ -150,7 +151,7 @@ void client_sin(Server<double>& server, int N)
         server.save_result(id, res);
         file << id << "," << args[i] << "," << res << "\n";
     }
-    
+
     std::cout << "sin client finished, " << N << " tasks\n";
 }
 
@@ -160,12 +161,12 @@ void client_sqrt(Server<double>& server, int N)
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 100);
-    
+
     std::ofstream file("../sqrt_results.csv");
     file << "id,argument,result\n";
-    
+
     std::vector<std::tuple<size_t, std::future<double>, double>> futures;
-    
+
     for (int i = 0; i < N; i++)
     {
         double arg = dis(gen);
@@ -176,14 +177,14 @@ void client_sqrt(Server<double>& server, int N)
         
         futures.emplace_back(id, std::move(future), arg);
     }
-    
+
     for (auto& [id, future, arg] : futures)
     {
         double res = future.get();
         server.save_result(id, res);
         file << id << "," << arg << "," << res << "\n";
     }
-    
+
     std::cout << "sqrt client finished, " << N << " tasks\n";
 }
 
@@ -194,13 +195,13 @@ void client_pow(Server<double>& server, int N)
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis1(1, 10);
     std::uniform_real_distribution<> dis2(0, 5);
-    
+
     std::ofstream file("../pow_results.csv");
     file << std::fixed << std::setprecision(15);
     file << "id,base,exponent,result\n";
-    
+
     std::vector<std::tuple<size_t, std::future<double>, double, double>> futures;
-    
+
     for (int i = 0; i < N; i++)
     {
         double base = dis1(gen);
@@ -212,24 +213,24 @@ void client_pow(Server<double>& server, int N)
         
         futures.emplace_back(id, std::move(future), base, exp);
     }
-    
+
     for (auto& [id, future, base, exp] : futures)
     {
         double res = future.get();
         server.save_result(id, res);
         file << id << "," << base << "," << exp << "," << res << "\n";
     }
-    
+
     std::cout << "pow client finished, " << N << " tasks\n";
 }
 
 
 int main(){
     std::cout << "Start\n";
-    
+
     Server<double> server;
     server.start();
-    
+
     int N = 1000; // (5 < N < 10000)
 
     std::thread t1(client_sin, std::ref(server), N);
@@ -239,9 +240,9 @@ int main(){
     t1.join();
     t2.join();
     t3.join();
-    
+
     server.stop();
-    
+
     std::cout << "End\n";
     return 0;
 }
