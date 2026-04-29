@@ -9,3 +9,8 @@ task_1
 .idea/
 .vscode/
 
+AddTask/
+ExamplePython/
+
+test.cpp
+test2.cpp
